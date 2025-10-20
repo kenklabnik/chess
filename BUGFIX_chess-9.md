@@ -1,3 +1,5 @@
+*NOTE: this should probably be in the .gitignore, as it's a file Claude used to fix the bug I noted in README.md. But I think it's interesting, so I'm leaving it. -Ken*
+
 # Chess-9 Bug Fix: Infinite Recursion Preventing Piece Clicks
 
 ## Issue
