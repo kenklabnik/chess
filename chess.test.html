@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Game Tests</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background: white;
+            padding: 20px;
+        }
+        .test-container {
+            margin: 20px auto;
+            max-width: 800px;
+        }
+        .test-results {
+            margin-top: 20px;
+            font-family: monospace;
+        }
+        .test-case {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        .test-case.pass {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .test-case.fail {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .test-summary {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e7f3ff;
+            border-radius: 5px;
+        }
+        #test-chessboard {
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Chess Game - Unit Tests</h1>
+        <div id="test-chessboard"></div>
+        <div class="test-results" id="test-results"></div>
+    </div>
+    <script src="chess.js"></script>
+    <script>
+        class ChessTestSuite {
+            constructor() {
+                this.tests = [];
+                this.passed = 0;
+                this.failed = 0;
+            }
+
+            assertEquals(actual, expected, message) {
+                if (actual !== expected) {
+                    throw new Error(`${message}: expected ${expected}, got ${actual}`);
+                }
+            }
+
+            assertTrue(value, message) {
+                if (!value) {
+                    throw new Error(`${message}: expected true, got ${value}`);
+                }
+            }
+
+            assertNotNull(value, message) {
+                if (value === null || value === undefined) {
+                    throw new Error(`${message}: value should not be null`);
+                }
+            }
+
+            async runTest(name, testFn) {
+                try {
+                    await testFn();
+                    this.passed++;
+                    this.logResult(name, true);
+                } catch (error) {
+                    this.failed++;
+                    this.logResult(name, false, error.message);
+                }
+            }
+
+            logResult(name, passed, errorMessage = '') {
+                const testCase = document.createElement('div');
+                testCase.className = `test-case ${passed ? 'pass' : 'fail'}`;
+                testCase.textContent = `${passed ? 'PASS' : 'FAIL'}: ${name}`;
+                if (errorMessage) {
+                    testCase.textContent += ` - ${errorMessage}`;
+                }
+                document.getElementById('test-results').appendChild(testCase);
+            }
+
+            showSummary() {
+                const summary = document.createElement('div');
+                summary.className = 'test-summary';
+                summary.textContent = `Test Results: ${this.passed} passed, ${this.failed} failed`;
+                document.getElementById('test-results').insertBefore(
+                    summary,
+                    document.getElementById('test-results').firstChild
+                );
+            }
+
+            async runAllTests() {
+                await this.testPieceClickability();
+                await this.testSquareClickWhenPiecePresent();
+                await this.testSelectingPieceHighlightsValidMoves();
+                await this.testClickingEmptySquareDoesNothing();
+                await this.testMovingPieceToValidSquare();
+                await this.testCannotSelectOpponentPiece();
+                await this.testDeselectPieceByClickingAgain();
+                this.showSummary();
+            }
+
+            async testPieceClickability() {
+                await this.runTest('Piece elements should allow click events to bubble to square', () => {
+                    const game = new ChessGame();
+                    const chessboard = document.getElementById('test-chessboard');
+
+                    const squares = chessboard.querySelectorAll('.square');
+                    this.assertTrue(squares.length === 64, 'Should have 64 squares');
+
+                    const whiteRookSquare = squares[7 * 8 + 0];
+                    const pieceElement = whiteRookSquare.querySelector('.piece');
+
+                    this.assertNotNull(pieceElement, 'White rook should have a piece element');
+
+                    const computedStyle = window.getComputedStyle(pieceElement);
+                    const pointerEvents = computedStyle.getPropertyValue('pointer-events');
+
+                    this.assertEquals(pointerEvents, 'none',
+                        'Piece should have pointer-events: none to allow clicks to bubble');
+                });
+            }
+
+            async testSquareClickWhenPiecePresent() {
+                await this.runTest('Clicking on a piece should select the square', () => {
+                    const game = new ChessGame();
+                    const chessboard = document.getElementById('test-chessboard');
+
+                    const whiteRookSquare = chessboard.querySelector('[data-row="7"][data-col="0"]');
+                    this.assertNotNull(whiteRookSquare, 'White rook square should exist');
+
+                    const pieceElement = whiteRookSquare.querySelector('.piece');
+                    this.assertNotNull(pieceElement, 'White rook should have a piece element');
+
+                    const clickEvent = new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+
+                    pieceElement.dispatchEvent(clickEvent);
+
+                    const selectedSquare = game.selectedSquare;
+                    this.assertNotNull(selectedSquare, 'A square should be selected after clicking');
+                    this.assertEquals(selectedSquare.row, 7, 'Selected row should be 7');
+                    this.assertEquals(selectedSquare.col, 0, 'Selected col should be 0');
+                });
+            }
+
+            async testSelectingPieceHighlightsValidMoves() {
+                await this.runTest('Selecting a piece should highlight valid moves', () => {
+                    const game = new ChessGame();
+                    const chessboard = document.getElementById('test-chessboard');
+
+                    const whitePawnSquare = chessboard.querySelector('[data-row="6"][data-col="4"]');
+                    const pieceElement = whitePawnSquare.querySelector('.piece');
+
+                    const clickEvent = new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+
+                    pieceElement.dispatchEvent(clickEvent);
+
+                    const validMoveSquares = chessboard.querySelectorAll('.valid-move');
+                    this.assertTrue(validMoveSquares.length > 0,
+                        'Should have at least one valid move highlighted');
+                });
+            }
+
+            async testClickingEmptySquareDoesNothing() {
+                await this.runTest('Clicking on an empty square without selection does nothing', () => {
+                    const game = new ChessGame();
+                    const chessboard = document.getElementById('test-chessboard');
+
+                    const emptySquare = chessboard.querySelector('[data-row="4"][data-col="4"]');
+
+                    const clickEvent = new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+
+                    emptySquare.dispatchEvent(clickEvent);
+
+                    const selectedSquare = game.selectedSquare;
+                    this.assertEquals(selectedSquare, null, 'No square should be selected');
+                });
+            }
+
+            async testMovingPieceToValidSquare() {
+                await this.runTest('Moving a piece to a valid square should work', () => {
+                    const game = new ChessGame();
+                    const chessboard = document.getElementById('test-chessboard');
+
+                    const whitePawnSquare = chessboard.querySelector('[data-row="6"][data-col="4"]');
+                    const pieceElement = whitePawnSquare.querySelector('.piece');
+
+                    let clickEvent = new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+                    pieceElement.dispatchEvent(clickEvent);
+
+                    const targetSquare = chessboard.querySelector('[data-row="4"][data-col="4"]');
+                    clickEvent = new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+                    targetSquare.dispatchEvent(clickEvent);
+
+                    this.assertEquals(game.board[4][4].type, 'pawn',
+                        'Pawn should be at target square');
+                    this.assertEquals(game.board[4][4].color, 'white',
+                        'Moved piece should be white');
+                    this.assertEquals(game.board[6][4], null,
+                        'Original square should be empty');
+                    this.assertEquals(game.currentTurn, 'black',
+                        'Turn should switch to black');
+                });
+            }
+
+            async testCannotSelectOpponentPiece() {
+                await this.runTest('Cannot select opponent piece on their turn', () => {
+                    const game = new ChessGame();
+                    const chessboard = document.getElementById('test-chessboard');
+
+                    const blackPawnSquare = chessboard.querySelector('[data-row="1"][data-col="0"]');
+                    const pieceElement = blackPawnSquare.querySelector('.piece');
+
+                    this.assertEquals(game.currentTurn, 'white', 'Should be white turn');
+
+                    const clickEvent = new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+                    pieceElement.dispatchEvent(clickEvent);
+
+                    const selectedSquare = game.selectedSquare;
+                    this.assertEquals(selectedSquare, null,
+                        'Should not select black piece on white turn');
+                });
+            }
+
+            async testDeselectPieceByClickingAgain() {
+                await this.runTest('Clicking the same piece again should deselect it', () => {
+                    const game = new ChessGame();
+                    const chessboard = document.getElementById('test-chessboard');
+
+                    const whitePawnSquare = chessboard.querySelector('[data-row="6"][data-col="4"]');
+                    const pieceElement = whitePawnSquare.querySelector('.piece');
+
+                    let clickEvent = new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+                    pieceElement.dispatchEvent(clickEvent);
+
+                    this.assertNotNull(game.selectedSquare, 'Should be selected');
+
+                    clickEvent = new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+                    pieceElement.dispatchEvent(clickEvent);
+
+                    this.assertEquals(game.selectedSquare, null,
+                        'Should be deselected after clicking again');
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const testSuite = new ChessTestSuite();
+            await testSuite.runAllTests();
+        });
+    </script>
+</body>
+</html>

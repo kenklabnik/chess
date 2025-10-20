@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Manual Test</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .debug-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 15px;
+            border: 2px solid #333;
+            border-radius: 5px;
+            font-family: monospace;
+            max-width: 300px;
+        }
+        .debug-log {
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 3px 0;
+            padding: 3px;
+            border-bottom: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chess Game - Manual Test</h1>
+        <div id="chessboard"></div>
+        <div class="game-info">
+            <div id="status">White to move</div>
+            <button id="reset-button">New Game</button>
+        </div>
+    </div>
+
+    <div class="debug-panel">
+        <h3>Debug Log</h3>
+        <button id="clear-log">Clear</button>
+        <div class="debug-log" id="debug-log"></div>
+    </div>
+
+    <script src="chess.js"></script>
+    <script>
+        const debugLog = document.getElementById('debug-log');
+        let logCount = 0;
+
+        function log(message) {
+            logCount++;
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${logCount}] ${message}`;
+            debugLog.appendChild(entry);
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
+
+        document.getElementById('clear-log').addEventListener('click', () => {
+            debugLog.innerHTML = '';
+            logCount = 0;
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            log('Page loaded');
+
+            const chessboard = document.getElementById('chessboard');
+
+            chessboard.addEventListener('click', (e) => {
+                log(`Click detected: target=${e.target.className}, type=${e.target.tagName}`);
+
+                const square = e.target.closest('.square');
+                if (square) {
+                    const row = square.dataset.row;
+                    const col = square.dataset.col;
+                    log(`Square found: row=${row}, col=${col}`);
+
+                    const piece = square.querySelector('.piece');
+                    if (piece) {
+                        log(`Piece present: ${piece.textContent}`);
+                    } else {
+                        log('No piece on this square');
+                    }
+                } else {
+                    log('No square element found!');
+                }
+            }, true);
+
+            log('Event listener attached to chessboard');
+
+            if (typeof ChessGame !== 'undefined') {
+                log('ChessGame class is available');
+                window.game = new ChessGame();
+                log('ChessGame instance created');
+            } else {
+                log('ERROR: ChessGame class not found!');
+            }
+        });
+    </script>
+</body>
+</html>
