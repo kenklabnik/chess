@@ -206,6 +206,7 @@ class ChessGame {
         this.enPassantTarget = null;
         this.setupBoard();
         this.renderBoard();
+        this.renderMoveHistory();
         this.updateStatus();
     }
 
@@ -617,6 +618,8 @@ class ChessGame {
             this.gameOverReason = 'stalemate';
         }
 
+        this.renderMoveHistory();
+
         return true;
     }
 
@@ -625,6 +628,69 @@ class ChessGame {
         if (!piece || piece.type !== 'pawn') return;
 
         piece.type = 'queen';
+    }
+
+    moveToAlgebraic(move) {
+        if (move.moveType === 'castle-kingside') {
+            return 'O-O';
+        }
+        if (move.moveType === 'castle-queenside') {
+            return 'O-O-O';
+        }
+
+        const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+
+        const toSquare = files[move.to.col] + ranks[move.to.row];
+        const fromFile = files[move.from.col];
+
+        let notation = '';
+
+        if (move.piece.type === 'pawn') {
+            if (move.captured) {
+                notation = fromFile + 'x' + toSquare;
+            } else {
+                notation = toSquare;
+            }
+            if (move.to.row === 0 || move.to.row === 7) {
+                notation += '=Q';
+            }
+        } else {
+            const pieceSymbol = move.piece.type.charAt(0).toUpperCase();
+            const capture = move.captured ? 'x' : '';
+            notation = pieceSymbol + capture + toSquare;
+        }
+
+        return notation;
+    }
+
+    renderMoveHistory() {
+        const moveListElement = document.getElementById('move-list');
+        if (!moveListElement) return;
+
+        moveListElement.innerHTML = '';
+
+        let i = 0;
+        while (i < this.moveHistory.length) {
+            const whiteMove = this.moveHistory[i];
+            const whiteMoveNotation = this.moveToAlgebraic(whiteMove);
+            const turnNumber = whiteMove.turn;
+
+            let movePairText = `${turnNumber}. ${whiteMoveNotation}`;
+
+            if (i + 1 < this.moveHistory.length && this.moveHistory[i + 1].player === 'black') {
+                const blackMove = this.moveHistory[i + 1];
+                const blackMoveNotation = this.moveToAlgebraic(blackMove);
+                movePairText += ` ${blackMoveNotation}`;
+                i += 2;
+            } else {
+                i += 1;
+            }
+
+            const moveElement = document.createElement('div');
+            moveElement.textContent = movePairText;
+            moveListElement.appendChild(moveElement);
+        }
     }
 }
 
