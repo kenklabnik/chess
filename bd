@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Simple wrapper to make bd-wrapper.py work like the real bd command
+exec python3 "$(dirname "$0")/bd-wrapper.py" "$@"
