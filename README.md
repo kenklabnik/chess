@@ -6,6 +6,8 @@
 
 *Hopefully you find this interesting! -Ken*
 
+*PS: Since I originally wrote the above, I've added a few new features. The original release just included a chessboard with Unicode-based chess pieces, click-to-move with validation (including special move logic like castling as well as respecting check) and a New Game reset button. Adding this note after the fact to give a better idea of the scope resulting from the steps described.*
+
 # Chess Game
 
 A browser-based chess game implementation with a clean, intuitive interface.

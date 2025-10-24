@@ -208,6 +208,10 @@ class ChessGame {
     }
 
     resetGame() {
+        if (!confirm('Are you sure you want to start a new game? This will reset the current game.')) {
+            return;
+        }
+
         this.currentTurn = 'white';
         this.selectedSquare = null;
         this.gameOver = false;
