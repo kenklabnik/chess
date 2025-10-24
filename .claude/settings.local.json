@@ -1,15 +1,8 @@
 {
   "permissions": {
     "allow": [
+      "Bash(bd :*)",
       "Bash(wsl bd :*)",
-      "Bash(git mv:*)",
-      "Bash(mv:*)",
-      "Bash(wsl bd list:*)",
-      "Bash(wsl bd create:*)",
-      "Bash(wsl bd update:*)",
-      "Bash(wsl bd close chess-15 --reason \"All file references verified and correct after repository reorganization. index.html, package.json, and all test files properly reference the new paths (src/ and test/ directories).\")",
-      "Bash(docker start:*)",
-      "Bash(wsl bd close:*)"
     ],
     "deny": [],
     "ask": []

@@ -37,10 +37,12 @@ build/
 .env.local
 .env.*.local
 
-# Beads Issue Tracker Database
+# Beads Issue Tracker Database and Runtime Files
 .beads/*.db
 .beads/*.db-shm
 .beads/*.db-wal
+.beads/*.sock
+.beads/*.pid
 
 # Test and Debug Files (optional - uncomment if you don't want to commit these)
 # markdown/

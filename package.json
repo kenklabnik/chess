@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "src/chess.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test/chess.test.js && node test/chess-undo.test.js",
+    "test:undo": "node test/chess-undo.test.js"
   },
   "keywords": [],
   "author": "",

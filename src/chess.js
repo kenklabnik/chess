@@ -43,6 +43,7 @@ class ChessGame {
         this.enPassantTarget = null;
         this.boundHandleSquareClick = (e) => this.handleSquareClick(e);
         this.boundResetGame = () => this.resetGame();
+        this.boundUndoMove = () => this.undoMove();
         this.initializeGame();
     }
 
@@ -125,6 +126,16 @@ class ChessGame {
         }
         resetButton.removeEventListener('click', this.boundResetGame);
         resetButton.addEventListener('click', this.boundResetGame);
+
+        const undoButton = document.getElementById('undo-button');
+        if (!undoButton) {
+            console.error('Undo button element not found!');
+            return;
+        }
+        undoButton.removeEventListener('click', this.boundUndoMove);
+        undoButton.addEventListener('click', this.boundUndoMove);
+
+        this.updateUndoButton();
     }
 
     handleSquareClick(event) {
@@ -208,6 +219,7 @@ class ChessGame {
         this.renderBoard();
         this.renderMoveHistory();
         this.updateStatus();
+        this.updateUndoButton();
     }
 
     updateStatus() {
@@ -230,6 +242,13 @@ class ChessGame {
             }
 
             statusElement.textContent = status;
+        }
+    }
+
+    updateUndoButton() {
+        const undoButton = document.getElementById('undo-button');
+        if (undoButton) {
+            undoButton.disabled = this.moveHistory.length === 0;
         }
     }
 
@@ -558,6 +577,34 @@ class ChessGame {
 
         const capturedPiece = this.board[toRow][toCol];
 
+        // Store state before making the move (for undo functionality)
+        const previousEnPassantTarget = this.enPassantTarget ?
+            { row: this.enPassantTarget.row, col: this.enPassantTarget.col } : null;
+        const pieceHadMoved = piece.hasMoved;
+        const capturedPieceHadMoved = capturedPiece ? capturedPiece.hasMoved : null;
+
+        // Store rook state for castling
+        let rookHadMoved = null;
+        let rookPosition = null;
+        if (move.type === 'castle-kingside') {
+            const baseRow = piece.color === 'white' ? 7 : 0;
+            rookPosition = { row: baseRow, col: 7 };
+            rookHadMoved = this.board[baseRow][7].hasMoved;
+        } else if (move.type === 'castle-queenside') {
+            const baseRow = piece.color === 'white' ? 7 : 0;
+            rookPosition = { row: baseRow, col: 0 };
+            rookHadMoved = this.board[baseRow][0].hasMoved;
+        }
+
+        // Store en passant captured piece info
+        let enPassantCapturedPiece = null;
+        let enPassantCapturePosition = null;
+        if (move.type === 'enpassant') {
+            const captureRow = piece.color === 'white' ? toRow + 1 : toRow - 1;
+            enPassantCapturedPiece = this.board[captureRow][toCol];
+            enPassantCapturePosition = { row: captureRow, col: toCol };
+        }
+
         this.enPassantTarget = null;
 
         if (piece.type === 'pawn' && move.type === 'double') {
@@ -593,7 +640,16 @@ class ChessGame {
             captured: capturedPiece ? { type: capturedPiece.type, color: capturedPiece.color } : null,
             turn: this.turnNumber,
             player: this.currentTurn,
-            moveType: move.type
+            moveType: move.type,
+            // State needed for undo
+            previousEnPassantTarget: previousEnPassantTarget,
+            pieceHadMoved: pieceHadMoved,
+            capturedPieceHadMoved: capturedPieceHadMoved,
+            rookHadMoved: rookHadMoved,
+            rookPosition: rookPosition,
+            enPassantCapturedPiece: enPassantCapturedPiece ?
+                { type: enPassantCapturedPiece.type, color: enPassantCapturedPiece.color, hasMoved: enPassantCapturedPiece.hasMoved } : null,
+            enPassantCapturePosition: enPassantCapturePosition
         });
 
         this.board[toRow][toCol] = piece;
@@ -619,6 +675,7 @@ class ChessGame {
         }
 
         this.renderMoveHistory();
+        this.updateUndoButton();
 
         return true;
     }
@@ -628,6 +685,99 @@ class ChessGame {
         if (!piece || piece.type !== 'pawn') return;
 
         piece.type = 'queen';
+    }
+
+    undoMove() {
+        // Return false if no moves to undo
+        if (this.moveHistory.length === 0) {
+            return false;
+        }
+
+        // Get the last move from history
+        const lastMove = this.moveHistory.pop();
+
+        // Restore the piece to its original position
+        const piece = this.board[lastMove.to.row][lastMove.to.col];
+
+        // Handle pawn promotion undo - restore to pawn
+        if (piece && piece.type === 'queen' && lastMove.piece.type === 'pawn' &&
+            (lastMove.to.row === 0 || lastMove.to.row === 7)) {
+            piece.type = 'pawn';
+        }
+
+        // Move piece back to original position
+        this.board[lastMove.from.row][lastMove.from.col] = piece;
+        this.board[lastMove.to.row][lastMove.to.col] = null;
+
+        // Restore hasMoved flag for the piece
+        if (piece) {
+            piece.hasMoved = lastMove.pieceHadMoved;
+        }
+
+        // Restore captured piece if there was one
+        if (lastMove.captured) {
+            const capturedPiece = new Piece(lastMove.captured.color, lastMove.captured.type);
+            capturedPiece.hasMoved = lastMove.capturedPieceHadMoved || false;
+            this.board[lastMove.to.row][lastMove.to.col] = capturedPiece;
+        }
+
+        // Handle special moves
+        switch (lastMove.moveType) {
+            case 'castle-kingside':
+                // Move rook back
+                const kingsideBaseRow = lastMove.piece.color === 'white' ? 7 : 0;
+                const kingsideRook = this.board[kingsideBaseRow][5];
+                this.board[kingsideBaseRow][7] = kingsideRook;
+                this.board[kingsideBaseRow][5] = null;
+                if (kingsideRook) {
+                    kingsideRook.hasMoved = lastMove.rookHadMoved;
+                }
+                break;
+
+            case 'castle-queenside':
+                // Move rook back
+                const queensideBaseRow = lastMove.piece.color === 'white' ? 7 : 0;
+                const queensideRook = this.board[queensideBaseRow][3];
+                this.board[queensideBaseRow][0] = queensideRook;
+                this.board[queensideBaseRow][3] = null;
+                if (queensideRook) {
+                    queensideRook.hasMoved = lastMove.rookHadMoved;
+                }
+                break;
+
+            case 'enpassant':
+                // Restore the captured pawn
+                if (lastMove.enPassantCapturedPiece && lastMove.enPassantCapturePosition) {
+                    const capturedPawn = new Piece(
+                        lastMove.enPassantCapturedPiece.color,
+                        lastMove.enPassantCapturedPiece.type
+                    );
+                    capturedPawn.hasMoved = lastMove.enPassantCapturedPiece.hasMoved;
+                    this.board[lastMove.enPassantCapturePosition.row][lastMove.enPassantCapturePosition.col] = capturedPawn;
+                }
+                break;
+        }
+
+        // Restore previous en passant target
+        this.enPassantTarget = lastMove.previousEnPassantTarget ?
+            { row: lastMove.previousEnPassantTarget.row, col: lastMove.previousEnPassantTarget.col } : null;
+
+        // Restore turn
+        this.currentTurn = lastMove.player;
+
+        // Restore turn number
+        this.turnNumber = lastMove.turn;
+
+        // Reset game over state
+        this.gameOver = false;
+        this.gameOverReason = null;
+
+        // Re-render the board and move history
+        this.renderBoard();
+        this.renderMoveHistory();
+        this.updateUndoButton();
+
+        return true;
     }
 
     moveToAlgebraic(move) {
