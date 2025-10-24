@@ -43,6 +43,7 @@ build/
 .beads/*.db-wal
 
 # Test and Debug Files (optional - uncomment if you don't want to commit these)
+# markdown/
 # BUGFIX_*.md
 # test-*.js
 # test-*.html

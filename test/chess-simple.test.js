@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 
 // Read and analyze the chess.js file
-const chessContent = fs.readFileSync(path.join(__dirname, 'chess.js'), 'utf8');
-const cssContent = fs.readFileSync(path.join(__dirname, 'styles.css'), 'utf8');
+const chessContent = fs.readFileSync(path.join(__dirname, '../src/chess.js'), 'utf8');
+const cssContent = fs.readFileSync(path.join(__dirname, '../src/styles.css'), 'utf8');
 
 console.log('\n=== Chess Clickability Analysis ===\n');
 

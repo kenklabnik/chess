@@ -41,7 +41,7 @@ global.document = {
 };
 
 // Load the chess code
-const chessContent = fs.readFileSync(path.join(__dirname, 'chess.js'), 'utf8');
+const chessContent = fs.readFileSync(path.join(__dirname, '../src/chess.js'), 'utf8');
 
 try {
     // Evaluate the chess.js code in the current context

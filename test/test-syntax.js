@@ -6,7 +6,7 @@ const path = require('path');
 console.log('\n=== Testing Chess.js Syntax and Structure ===\n');
 
 try {
-    const chessContent = fs.readFileSync(path.join(__dirname, 'chess.js'), 'utf8');
+    const chessContent = fs.readFileSync(path.join(__dirname, '../src/chess.js'), 'utf8');
 
     console.log('Step 1: File read successfully');
     console.log('  File size:', chessContent.length, 'bytes');
