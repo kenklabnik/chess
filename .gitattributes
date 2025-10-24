@@ -1,0 +1,33 @@
+# Set default behavior to automatically normalize line endings
+* text=auto
+
+# Force LF for shell scripts and Linux-specific files
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Force LF for Docker-related files
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+docker-compose*.yml text eol=lf
+.dockerignore text eol=lf
+
+# Force CRLF for Windows batch files
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Force LF for common development files
+*.js text eol=lf
+*.ts text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
